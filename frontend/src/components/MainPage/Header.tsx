@@ -11,6 +11,9 @@ import {
   SlidersHorizontal,
   FolderOpen,
   ArrowRight,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -30,6 +33,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { useTheme } from "../../theme-provider";
 
 const LANGUAGES = [
   { name: "JavaScript", ext: "*.js, *.jsx, *.mjs", category: "Web" },
@@ -55,6 +66,7 @@ function formatSpace(gb: number) {
 }
 
 export function Header() {
+  const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState<string | null>(null);
   const [drive, setDrive] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -112,6 +124,44 @@ export function Header() {
             </p>
           </div>
         </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="relative"
+                aria-label="Ubah tema"
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuRadioGroup
+              value={theme}
+              onValueChange={(value) =>
+                setTheme(value as "light" | "dark" | "system")
+              }
+            >
+              <DropdownMenuRadioItem value="light" className="py-1.5">
+                <Sun className="h-4 w-4" />
+                Terang
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark" className="py-1.5">
+                <Moon className="h-4 w-4" />
+                Gelap
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="system" className="py-1.5">
+                <Monitor className="h-4 w-4" />
+                Sistem
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* SECTION 2: Vertical Layout Configuration Controls */}
