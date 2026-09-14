@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   ChevronRight,
   FileCode,
@@ -8,6 +8,7 @@ import {
   HardDrive,
 } from "lucide-react";
 import { cn } from "cn";
+import { scanner } from "../../../wailsjs/go/models";
 import { Badge } from "../ui/badge";
 import {
   Breadcrumb,
@@ -34,198 +35,107 @@ import {
   TableRow,
 } from "../ui/table";
 
-type TreeNode = {
-  name: string;
-  kind: "drive" | "folder" | "file";
-  size?: string;
-  children?: TreeNode[];
-};
-
-const TREE: TreeNode[] = [
-  {
-    name: "C:",
-    kind: "drive",
-    size: "312,4 GB",
-    children: [
-      {
-        name: "Program Files",
-        kind: "folder",
-        size: "48,2 GB",
-        children: [
-          { name: "nodejs", kind: "folder", size: "620 MB" },
-          { name: "Python311", kind: "folder", size: "1,1 GB" },
-          { name: "Git", kind: "folder", size: "340 MB" },
-        ],
-      },
-      {
-        name: "Users",
-        kind: "folder",
-        size: "128,7 GB",
-        children: [
-          {
-            name: "Shifyannn",
-            kind: "folder",
-            size: "96,4 GB",
-            children: [
-              { name: "Documents", kind: "folder", size: "12,3 GB" },
-              {
-                name: "Projects",
-                kind: "folder",
-                size: "34,8 GB",
-                children: [
-                  { name: "main.go", kind: "file", size: "2,4 KB" },
-                  { name: "App.tsx", kind: "file", size: "18 KB" },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      { name: "Windows", kind: "folder", size: "42,1 GB" },
-    ],
-  },
-  {
-    name: "D:",
-    kind: "drive",
-    size: "402,1 GB",
-    children: [
-      {
-        name: "Coding",
-        kind: "folder",
-        size: "210,4 GB",
-        children: [
-          {
-            name: "programming-languages-finder",
-            kind: "folder",
-            size: "1,2 GB",
-          },
-          { name: "playground", kind: "folder", size: "58,7 GB" },
-        ],
-      },
-      { name: "Games", kind: "folder", size: "180,6 GB" },
-    ],
-  },
-];
-
-type SearchResult = {
+type FolderNode = {
   name: string;
   path: string;
-  language: string;
-  size: string;
-  modified: string;
+  count: number;
+  children: FolderNode[];
 };
 
-const RESULTS: SearchResult[] = [
-  {
-    name: "main.go",
-    path: "D:\\Coding\\programming-languages-finder\\main.go",
-    language: "Go",
-    size: "1,1 KB",
-    modified: "13 Sep 2026 06:12",
-  },
-  {
-    name: "app.go",
-    path: "D:\\Coding\\programming-languages-finder\\app.go",
-    language: "Go",
-    size: "0,6 KB",
-    modified: "13 Sep 2026 06:12",
-  },
-  {
-    name: "Header.tsx",
-    path: "D:\\Coding\\programming-languages-finder\\frontend\\src\\components\\Header.tsx",
-    language: "TypeScript",
-    size: "6,2 KB",
-    modified: "13 Sep 2026 07:41",
-  },
-  {
-    name: "Body.tsx",
-    path: "D:\\Coding\\programming-languages-finder\\frontend\\src\\components\\Body.tsx",
-    language: "TypeScript",
-    size: "4,8 KB",
-    modified: "13 Sep 2026 07:52",
-  },
-  {
-    name: "utils.py",
-    path: "D:\\Coding\\playground\\scripts\\utils.py",
-    language: "Python",
-    size: "3,4 KB",
-    modified: "11 Sep 2026 21:08",
-  },
-  {
-    name: "server.py",
-    path: "D:\\Coding\\playground\\api\\server.py",
-    language: "Python",
-    size: "9,7 KB",
-    modified: "10 Sep 2026 15:33",
-  },
-  {
-    name: "index.ts",
-    path: "D:\\Coding\\playground\\web\\src\\index.ts",
-    language: "TypeScript",
-    size: "1,9 KB",
-    modified: "09 Sep 2026 09:20",
-  },
-  {
-    name: "Cargo.toml",
-    path: "D:\\Coding\\playground\\rust\\Cargo.toml",
-    language: "Rust",
-    size: "0,4 KB",
-    modified: "08 Sep 2026 18:47",
-  },
-  {
-    name: "Main.java",
-    path: "C:\\Users\\Shifyannn\\Projects\\java\\Main.java",
-    language: "Java",
-    size: "2,8 KB",
-    modified: "07 Sep 2026 11:02",
-  },
-  {
-    name: "config.php",
-    path: "C:\\Users\\Shifyannn\\Projects\\web\\config.php",
-    language: "PHP",
-    size: "1,3 KB",
-    modified: "05 Sep 2026 20:14",
-  },
-];
+function driveLabel(path: string) {
+  return path.replace(/[\\/]+$/, "");
+}
+
+function buildTree(root: string, results: scanner.Result[]): FolderNode {
+  const base = root.endsWith("\\") || root.endsWith("/") ? root : `${root}\\`;
+  const rootNode: FolderNode = {
+    name: driveLabel(root),
+    path: base,
+    count: results.length,
+    children: [],
+  };
+  const index = new Map<string, FolderNode>([[base, rootNode]]);
+
+  for (const result of results) {
+    const dir = result.path.slice(0, result.path.length - result.name.length);
+    const relative = dir.slice(base.length).replace(/[\\/]+$/, "");
+    if (relative === "") continue;
+
+    let parent = rootNode;
+    let path = base;
+    for (const segment of relative.split(/[\\/]+/)) {
+      path += `${segment}\\`;
+      let node = index.get(path);
+      if (!node) {
+        node = { name: segment, path, count: 0, children: [] };
+        index.set(path, node);
+        parent.children.push(node);
+      }
+      node.count += 1;
+      parent = node;
+    }
+  }
+
+  sortByName(rootNode);
+  return rootNode;
+}
+
+function sortByName(node: FolderNode) {
+  node.children.sort((a, b) => a.name.localeCompare(b.name));
+  for (const child of node.children) sortByName(child);
+}
+
+function crumbsFor(root: FolderNode, active: string): string[] {
+  const relative = active.slice(root.path.length).replace(/[\\/]+$/, "");
+  return relative === ""
+    ? [root.name]
+    : [root.name, ...relative.split(/[\\/]+/)];
+}
+
+function formatBytes(bytes: number) {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
+function formatDate(ms: number) {
+  return new Date(ms).toLocaleString("id-ID");
+}
 
 function TreeItem({
   node,
-  path,
-  selectedPath,
+  depth,
+  activePath,
   onSelect,
 }: {
-  node: TreeNode;
-  path: string[];
-  selectedPath: string[];
-  onSelect: (path: string[]) => void;
+  node: FolderNode;
+  depth: number;
+  activePath: string;
+  onSelect: (path: string) => void;
 }) {
-  const currentPath = [...path, node.name];
-  const hasChildren = Boolean(node.children?.length);
-  const [open, setOpen] = useState(node.kind === "drive");
-  const selected = currentPath.join("/") === selectedPath.join("/");
-
-  const Icon =
-    node.kind === "drive"
-      ? HardDrive
-      : node.kind === "folder"
-        ? open
-          ? FolderOpen
-          : Folder
-        : FileCode;
+  const hasChildren = node.children.length > 0;
+  const [open, setOpen] = useState(depth === 0);
+  const selected = node.path === activePath;
+  const Icon = depth === 0 ? HardDrive : open ? FolderOpen : Folder;
 
   return (
     <div>
       <Button
         variant="ghost"
         onClick={() => {
-          onSelect(currentPath);
+          onSelect(node.path);
           if (hasChildren) setOpen((value) => !value);
         }}
         className={cn(
           "h-7 w-full justify-start gap-1.5 px-1.5 font-normal",
           selected && "bg-accent text-accent-foreground",
         )}
-        style={{ paddingLeft: path.length * 14 + 4 }}
+        style={{ paddingLeft: depth * 14 + 4 }}
       >
         <ChevronRight
           className={cn(
@@ -236,20 +146,18 @@ function TreeItem({
         />
         <Icon className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate text-left">{node.name}</span>
-        {node.size ? (
-          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-            {node.size}
-          </span>
-        ) : null}
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+          {node.count}
+        </span>
       </Button>
       {hasChildren && open ? (
         <div className="ml-3.5 border-l border-border pl-0.5">
-          {node.children?.map((child) => (
+          {node.children.map((child) => (
             <TreeItem
-              key={child.name}
+              key={child.path}
               node={child}
-              path={currentPath}
-              selectedPath={selectedPath}
+              depth={depth + 1}
+              activePath={activePath}
               onSelect={onSelect}
             />
           ))}
@@ -259,7 +167,15 @@ function TreeItem({
   );
 }
 
-function ResultsPanel({ path }: { path: string[] }) {
+function ResultsPanel({
+  path,
+  results,
+  language,
+}: {
+  path: string[];
+  results: scanner.Result[];
+  language: string;
+}) {
   return (
     <>
       <div className="flex items-center justify-between gap-4 px-3 py-2">
@@ -286,7 +202,7 @@ function ResultsPanel({ path }: { path: string[] }) {
           </BreadcrumbList>
         </Breadcrumb>
         <span className="shrink-0 text-xs text-muted-foreground">
-          {RESULTS.length} file ditemukan
+          {results.length} file ditemukan
         </span>
       </div>
       <Separator />
@@ -302,7 +218,7 @@ function ResultsPanel({ path }: { path: string[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {RESULTS.map((result) => (
+            {results.map((result) => (
               <TableRow key={result.path}>
                 <TableCell className="font-medium">
                   <span className="flex items-center gap-2">
@@ -311,13 +227,13 @@ function ResultsPanel({ path }: { path: string[] }) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{result.language}</Badge>
+                  <Badge variant="secondary">{language}</Badge>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {result.size}
+                  {formatBytes(result.size)}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {result.modified}
+                  {formatDate(result.modified)}
                 </TableCell>
                 <TableCell className="max-w-[260px] truncate text-muted-foreground">
                   {result.path}
@@ -331,20 +247,45 @@ function ResultsPanel({ path }: { path: string[] }) {
   );
 }
 
-function StatusBar({ path }: { path: string[] }) {
+function StatusBar({
+  path,
+  results,
+}: {
+  path: string[];
+  results: scanner.Result[];
+}) {
+  const total = results.reduce((sum, result) => sum + result.size, 0);
   return (
     <div className="flex items-center justify-between gap-4 px-3 py-1.5 text-xs text-muted-foreground">
-      <span className="shrink-0">{RESULTS.length} item</span>
+      <span className="shrink-0">{results.length} item</span>
       <span className="truncate">
-        {path.length > 0 ? path.join("\\") : "Belum ada lokasi dipilih"} • Total
-        32,2 KB
+        {path.length > 0 ? path.join("\\") : "Belum ada lokasi dipilih"} • Total{" "}
+        {formatBytes(total)}
       </span>
     </div>
   );
 }
 
-export function Body() {
-  const [selectedPath, setSelectedPath] = useState<string[]>(["C:"]);
+export function Body({
+  results,
+  language,
+  root,
+}: {
+  results: scanner.Result[];
+  language: string;
+  root: string;
+}) {
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const tree = useMemo(() => buildTree(root, results), [root, results]);
+  const active = selected ?? tree.path;
+  const crumbs = crumbsFor(tree, active);
+  const visible = useMemo(
+    () => results.filter((result) => result.path.startsWith(active)),
+    [results, active],
+  );
+
+  useEffect(() => setSelected(null), [results]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -363,26 +304,33 @@ export function Body() {
           </div>
           <Separator />
           <ScrollArea className="min-h-0 flex-1 p-2">
-            {TREE.map((node) => (
+            {root ? (
               <TreeItem
-                key={node.name}
-                node={node}
-                path={[]}
-                selectedPath={selectedPath}
-                onSelect={setSelectedPath}
+                node={tree}
+                depth={0}
+                activePath={active}
+                onSelect={setSelected}
               />
-            ))}
+            ) : (
+              <p className="px-1.5 py-2 text-xs text-muted-foreground">
+                Belum ada pemindaian
+              </p>
+            )}
           </ScrollArea>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
 
         <ResizablePanel className="flex min-h-0 flex-col">
-          <ResultsPanel path={selectedPath} />
+          <ResultsPanel
+            path={crumbs}
+            results={visible}
+            language={language}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
       <Separator />
-      <StatusBar path={selectedPath} />
+      <StatusBar path={crumbs} results={visible} />
     </div>
   );
 }

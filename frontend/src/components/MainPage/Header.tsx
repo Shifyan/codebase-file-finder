@@ -15,6 +15,7 @@ import {
   Moon,
   Monitor,
 } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -25,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Progress } from "../ui/progress";
 import { Badge } from "../ui/badge";
 import {
   Tooltip,
@@ -41,7 +41,12 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { useTheme } from "../../theme-provider";
-
+import {
+  GetAvaliableServices,
+  GetDiskStats,
+  SearchFiles,
+} from "../../../wailsjs/go/main/App";
+import { scanner, storage } from "../../../wailsjs/go/models";
 const LANGUAGES = [
   { name: "JavaScript", ext: "*.js, *.jsx, *.mjs", category: "Web" },
   { name: "TypeScript", ext: "*.ts, *.tsx", category: "Web" },
@@ -55,49 +60,79 @@ const LANGUAGES = [
   { name: "Ruby", ext: "*.rb", category: "Backend" },
 ];
 
-const DRIVES = [
-  { name: "C:", total: 476.9, used: 312.4, free: 164.5 },
-  { name: "D:", total: 931.5, used: 402.1, free: 529.4 },
-  { name: "E:", total: 238.4, used: 88.7, free: 149.7 },
-];
+const SCAN_MODES = [
+  { value: "fast", label: "Fast Index", hint: "Memindai cache sistem" },
+  { value: "deep", label: "Deep Scan", hint: "Memindai direktori sektor" },
+] as const;
 
-function formatSpace(gb: number) {
-  return `${gb.toFixed(1)} GB`;
+function formatSpace(bytes: number) {
+  return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 }
 
-export function Header() {
+function driveLabel(path: string) {
+  return path.replace(/[\\/]+$/, "");
+}
+
+export function Header({
+  onResults,
+}: {
+  onResults: (
+    results: scanner.Result[],
+    language: string,
+    root: string,
+  ) => void;
+}) {
   const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState<string | null>(null);
   const [drive, setDrive] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [scanMode, setScanMode] = useState<"fast" | "deep">("fast");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
   const [searching, setSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [drives, setDrives] = useState<storage.DiskStats[]>([]);
 
-  const selectedDrive = DRIVES.find((item) => item.name === drive) ?? null;
+  const selectedDrive = drives.find((item) => item.path === drive) ?? null;
   const selectedLangInfo = LANGUAGES.find((item) => item.name === language);
+  const activeScanMode =
+    SCAN_MODES.find((mode) => mode.value === scanMode) ?? SCAN_MODES[0];
 
-  const driveUsagePercent = selectedDrive
-    ? Math.round((selectedDrive.used / selectedDrive.total) * 100)
+  const driveUsagePercent = selectedDrive?.totalBytes
+    ? Math.round((selectedDrive.usedBytes / selectedDrive.totalBytes) * 100)
     : 0;
 
   useEffect(() => {
-    if (!searching) return;
-    if (progress >= 100) {
-      setSearching(false);
-      return;
-    }
-    const id = window.setTimeout(() => {
-      setProgress((current) => Math.min(current + 5, 100));
-    }, 100);
-    return () => window.clearTimeout(id);
-  }, [searching, progress]);
+    (async () => {
+      const paths = await GetAvaliableServices();
+      const results = await Promise.allSettled(
+        paths.map((path) => GetDiskStats(path)),
+      );
+      setDrives(
+        results.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : [],
+        ),
+      );
+    })().catch((err) => console.error("Gagal memuat daftar drive:", err));
+  }, []);
 
-  function handleSearch() {
-    if (!language || !drive || searching) return;
-    setProgress(0);
+  async function handleSearch() {
+    if (!selectedLangInfo || !drive || searching) return;
+    const patterns = selectedLangInfo.ext.split(",").map((ext) => ext.trim());
+    setError(null);
     setSearching(true);
+    try {
+      const found = await SearchFiles(
+        drive,
+        patterns,
+        query,
+        scanMode === "fast",
+      );
+      onResults(found, selectedLangInfo.name, drive);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSearching(false);
+    }
   }
 
   const filteredLanguages = activeCategory
@@ -187,16 +222,18 @@ export function Header() {
                   <SelectValue placeholder="Pilih Drive" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DRIVES.map((item) => (
+                  {drives.map((item) => (
                     <SelectItem
                       className={"py-2"}
-                      key={item.name}
-                      value={item.name}
+                      key={item.path}
+                      value={item.path}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-bold">{item.name}</span>
+                        <span className="font-bold">
+                          {driveLabel(item.path)}
+                        </span>
                         <span className="text-xs text-muted-foreground">
-                          ({formatSpace(item.free)} sisa)
+                          ({formatSpace(item.freeBytes)} sisa)
                         </span>
                       </div>
                     </SelectItem>
@@ -260,37 +297,62 @@ export function Header() {
           </div>
 
           {/* Action Bar inside Left Section */}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant={scanMode === "fast" ? "secondary" : "outline"}
-                      size="sm"
-                      className="h-10 p-2 flex justify-center items-center px-3 text-xs font-medium"
-                      onClick={() =>
-                        setScanMode(scanMode === "fast" ? "deep" : "fast")
-                      }
-                    >
-                      <Zap
-                        className={`h-3.5 w-3.5 mr-1.5 ${scanMode === "fast" ? "text-amber-500 fill-amber-500" : ""}`}
-                      />
-                      Mode: {scanMode === "fast" ? "Fast Index" : "Deep Scan"}
-                    </Button>
-                  }
-                />
-                <TooltipContent>
-                  <p className="text-xs">
-                    {scanMode === "fast"
-                      ? "Fast Index: Memindai cache sistem"
-                      : "Deep Scan: Memindai direktori sektor"}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
+          <div className="flex items-center justify-between gap-3 pt-2 border-t">
+            <div className="flex items-center">
+              <div className="me-3">
+                <p>Mode: </p>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <div
+                        role="radiogroup"
+                        aria-label="Mode pemindaian"
+                        className="flex h-10 items-center gap-0.5 rounded-lg border bg-muted/40 p-1 me-2"
+                      >
+                        {SCAN_MODES.map((mode) => {
+                          const active = scanMode === mode.value;
+                          return (
+                            <Button
+                              key={mode.value}
+                              type="button"
+                              role="radio"
+                              aria-checked={active}
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setScanMode(mode.value)}
+                              className={cn(
+                                "h-full rounded-md px-3 text-xs font-medium",
+                                active
+                                  ? "bg-background text-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              <Zap
+                                className={cn(
+                                  "mr-1.5 h-3.5 w-3.5",
+                                  active && "text-amber-500 fill-amber-500",
+                                )}
+                              />
+                              {mode.label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    }
+                  />
+                  <TooltipContent>
+                    <p className="text-xs">
+                      {activeScanMode.label}: {activeScanMode.hint}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <p className="text-[12px] self-end py-0.5 text-white/35">
+                *Mengabaikan .git & node_modules
+              </p>
+            </div>
             <Button
               size="sm"
               className="h-10 p-2 flex justify-center items-center px-5 font-semibold shadow-sm"
@@ -318,7 +380,7 @@ export function Header() {
                     Storage Stats
                   </span>
                   <span className="font-bold text-lg text-foreground">
-                    Drive {selectedDrive.name}
+                    Drive {driveLabel(selectedDrive.path)}
                   </span>
                 </div>
                 <Badge
@@ -335,13 +397,13 @@ export function Header() {
                   <span>
                     Terpakai:{" "}
                     <strong className="text-foreground">
-                      {formatSpace(selectedDrive.used)}
+                      {formatSpace(selectedDrive.usedBytes)}
                     </strong>
                   </span>
                   <span>
                     Bebas:{" "}
                     <strong className="text-foreground">
-                      {formatSpace(selectedDrive.free)}
+                      {formatSpace(selectedDrive.freeBytes)}
                     </strong>
                   </span>
                 </div>
@@ -360,7 +422,7 @@ export function Header() {
                 <span>
                   Total Ukuran:{" "}
                   <strong className="text-foreground">
-                    {formatSpace(selectedDrive.total)}
+                    {formatSpace(selectedDrive.totalBytes)}
                   </strong>
                 </span>
                 <span className="font-mono text-[10px]">NTFS File System</span>
@@ -418,22 +480,27 @@ export function Header() {
         )}
       </div> */}
 
-      {/* SECTION 4: Dynamic Progress Bar & Scan Status */}
-      {(searching || progress > 0) && (
+      {/* SECTION 4: Scan Status */}
+      {searching && (
         <div className="border-t bg-background px-6 py-2.5">
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="font-medium flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-              </span>
-              {progress === 100
-                ? "Pemindaian Selesai"
-                : `Memindai direktori ${drive}...`}
+          <div className="flex items-center gap-2 text-xs mb-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
-            <span className="font-mono font-bold">{progress}%</span>
+            <span className="font-medium">
+              Memindai {drive} • {selectedLangInfo?.name}...
+            </span>
           </div>
-          <Progress value={progress} className="h-1.5 w-full" />
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
+          </div>
+        </div>
+      )}
+
+      {error && !searching && (
+        <div className="border-t bg-destructive/10 px-6 py-2 text-xs text-destructive">
+          Pemindaian gagal: {error}
         </div>
       )}
     </header>
