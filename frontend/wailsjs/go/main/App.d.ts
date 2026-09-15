@@ -3,10 +3,12 @@
 import {storage} from '../models';
 import {scanner} from '../models';
 
+export function CancelSearch(arg1:string):Promise<void>;
+
 export function GetAvaliableServices():Promise<Array<string>>;
 
 export function GetDiskStats(arg1:string):Promise<storage.DiskStats>;
 
 export function Greet(arg1:string):Promise<string>;
 
-export function SearchFiles(arg1:string,arg2:Array<string>,arg3:string,arg4:boolean):Promise<Array<scanner.Result>>;
+export function SearchFiles(arg1:string,arg2:Array<string>,arg3:string,arg4:string,arg5:number,arg6:string):Promise<scanner.SearchStats>;

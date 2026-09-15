@@ -1,21 +1,19 @@
 export namespace scanner {
 	
-	export class Result {
-	    name: string;
-	    path: string;
-	    size: number;
-	    modified: number;
+	export class SearchStats {
+	    total: number;
+	    truncated: boolean;
+	    cancelled: boolean;
 	
 	    static createFrom(source: any = {}) {
-	        return new Result(source);
+	        return new SearchStats(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.name = source["name"];
-	        this.path = source["path"];
-	        this.size = source["size"];
-	        this.modified = source["modified"];
+	        this.total = source["total"];
+	        this.truncated = source["truncated"];
+	        this.cancelled = source["cancelled"];
 	    }
 	}
 

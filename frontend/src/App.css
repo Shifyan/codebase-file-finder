@@ -25,6 +25,7 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -39,6 +40,11 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    --color-well-line: var(--well-line);
+    --color-well-hover: var(--well-hover);
+    --color-well-text: var(--well-text);
+    --color-well-muted: var(--well-muted);
+    --color-edge-line: var(--edge-line);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -48,83 +54,236 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Material roles: "metal" is the enclosure the operator touches, "well" is the
+   recessed dark readout where data lives. Light always comes from above, so every
+   raised face is lit on top and shaded underneath, and every recess is the reverse. */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --background: oklch(0.868 0.004 250);
+    --foreground: oklch(0.22 0.012 255);
+
+    --metal-top: oklch(0.905 0.004 250);
+    --metal-bottom: oklch(0.848 0.005 250);
+    --panel-top: oklch(0.945 0.004 250);
+    --panel-bottom: oklch(0.862 0.005 250);
+    --bevel-light: oklch(1 0 0 / 0.85);
+    --bevel-dark: oklch(0.28 0.015 255 / 0.32);
+    --edge-line: oklch(0.33 0.015 255 / 0.3);
+    --brush-ink: oklch(0 0 0 / 0.035);
+
+    /* A recess is a shadowed part of the same material, not a hole. In light mode it
+       stays light and keeps dark text; only the depth cue changes. */
+    --well: oklch(0.828 0.005 250);
+    --well-deep: oklch(0.775 0.006 250);
+    --well-line: oklch(0.685 0.008 250);
+    --well-hover: oklch(0.792 0.006 250);
+    --well-text: oklch(0.245 0.012 255);
+    --well-muted: oklch(0.45 0.014 255);
+    --recess-shadow: oklch(0.28 0.02 255 / 0.26);
+    --recess-light: oklch(1 0 0 / 0.8);
+
+    --card: oklch(0.9 0.004 250);
+    --card-foreground: oklch(0.22 0.012 255);
+    --popover: oklch(0.93 0.004 250);
+    --popover-foreground: oklch(0.22 0.012 255);
+    --primary: oklch(0.52 0.135 66);
+    --primary-foreground: oklch(0.99 0.01 85);
+    --secondary: oklch(0.825 0.005 250);
+    --secondary-foreground: oklch(0.22 0.012 255);
+    --muted: oklch(0.835 0.005 250);
+    --muted-foreground: oklch(0.44 0.014 255);
+    --accent: oklch(0.815 0.005 250);
+    --accent-foreground: oklch(0.22 0.012 255);
+    --destructive: oklch(0.545 0.198 27.5);
+    --destructive-foreground: oklch(0.99 0.012 40);
+    --border: oklch(0.33 0.015 255 / 0.22);
+    --input: oklch(0.33 0.015 255 / 0.3);
+    --ring: oklch(0.52 0.135 66);
+    --chart-1: oklch(0.52 0.135 66);
+    --chart-2: oklch(0.55 0.11 240);
+    --chart-3: oklch(0.5 0.12 302);
+    --chart-4: oklch(0.58 0.12 162);
+    --chart-5: oklch(0.5 0.03 255);
+
+    /* Machined corners, not soft ones. */
+    --radius: 0.45rem;
+
+    --sidebar: oklch(0.9 0.004 250);
+    --sidebar-foreground: oklch(0.22 0.012 255);
+    --sidebar-primary: oklch(0.52 0.135 66);
+    --sidebar-primary-foreground: oklch(0.99 0.01 85);
+    --sidebar-accent: oklch(0.815 0.005 250);
+    --sidebar-accent-foreground: oklch(0.22 0.012 255);
+    --sidebar-border: oklch(0.33 0.015 255 / 0.22);
+    --sidebar-ring: oklch(0.52 0.135 66);
 }
 
+/* Dark mode is anodised hardware, not the light panel with the lights off. */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: oklch(0.272 0.008 255);
+    --foreground: oklch(0.94 0.006 250);
+
+    --metal-top: oklch(0.315 0.008 255);
+    --metal-bottom: oklch(0.215 0.008 255);
+    --panel-top: oklch(0.335 0.008 255);
+    --panel-bottom: oklch(0.245 0.008 255);
+    --bevel-light: oklch(1 0 0 / 0.16);
+    --bevel-dark: oklch(0 0 0 / 0.55);
+    --edge-line: oklch(0 0 0 / 0.5);
+    --brush-ink: oklch(1 0 0 / 0.03);
+
+    --well: oklch(0.155 0.012 258);
+    --well-deep: oklch(0.105 0.012 258);
+    --well-line: oklch(0.3 0.012 258);
+    --well-hover: oklch(0.225 0.012 258);
+    --well-text: oklch(0.95 0.006 250);
+    --well-muted: oklch(0.685 0.012 250);
+    --recess-shadow: oklch(0 0 0 / 0.5);
+    --recess-light: oklch(1 0 0 / 0.07);
+
+    --card: oklch(0.3 0.008 255);
+    --card-foreground: oklch(0.94 0.006 250);
+    --popover: oklch(0.325 0.008 255);
+    --popover-foreground: oklch(0.94 0.006 250);
+    --primary: oklch(0.79 0.14 74);
+    --primary-foreground: oklch(0.22 0.045 62);
+    --secondary: oklch(0.235 0.008 255);
+    --secondary-foreground: oklch(0.94 0.006 250);
+    --muted: oklch(0.235 0.008 255);
+    --muted-foreground: oklch(0.72 0.012 250);
+    --accent: oklch(0.25 0.008 255);
+    --accent-foreground: oklch(0.96 0.006 250);
+    --destructive: oklch(0.68 0.185 24);
+    --destructive-foreground: oklch(0.2 0.045 25);
+    --border: oklch(0 0 0 / 0.45);
+    --input: oklch(0 0 0 / 0.45);
+    --ring: oklch(0.79 0.14 74);
+    --chart-1: oklch(0.79 0.14 74);
+    --chart-2: oklch(0.72 0.11 240);
+    --chart-3: oklch(0.68 0.12 302);
+    --chart-4: oklch(0.75 0.12 162);
+    --chart-5: oklch(0.6 0.02 250);
+
+    --sidebar: oklch(0.3 0.008 255);
+    --sidebar-foreground: oklch(0.94 0.006 250);
+    --sidebar-primary: oklch(0.79 0.14 74);
+    --sidebar-primary-foreground: oklch(0.22 0.045 62);
+    --sidebar-accent: oklch(0.25 0.008 255);
+    --sidebar-accent-foreground: oklch(0.96 0.006 250);
+    --sidebar-border: oklch(0 0 0 / 0.45);
+    --sidebar-ring: oklch(0.79 0.14 74);
+}
+
+/* A panel that stands proud of the chassis. */
+@utility raised {
+    background-image: linear-gradient(to bottom, var(--panel-top), var(--panel-bottom));
+    border: 1px solid var(--edge-line);
+    box-shadow:
+        inset 0 1px 0 0 var(--bevel-light),
+        inset 0 -1px 0 0 var(--bevel-dark),
+        0 1px 2px oklch(0 0 0 / 0.16),
+        0 8px 16px -8px oklch(0 0 0 / 0.3);
+}
+
+/* A tactile control cap: same light logic, shallower shadow so it reads pressable. */
+@utility control {
+    background-image: linear-gradient(to bottom, var(--panel-top), var(--panel-bottom));
+    border: 1px solid var(--edge-line);
+    box-shadow:
+        inset 0 1px 0 0 var(--bevel-light),
+        0 1px 0 0 var(--bevel-dark),
+        0 2px 3px -1px oklch(0 0 0 / 0.24);
+}
+
+/* A neutral lighting overlay: because it carries no colour of its own, the same
+   light logic applies to a metal cap, an amber button, and a red one. */
+@utility bevel {
+    background-image: linear-gradient(
+        to bottom,
+        oklch(1 0 0 / 0.2),
+        oklch(1 0 0 / 0) 45%,
+        oklch(0 0 0 / 0.12)
+    );
+    box-shadow:
+        inset 0 1px 0 0 oklch(1 0 0 / 0.28),
+        inset 0 -1px 0 0 oklch(0 0 0 / 0.22),
+        0 1px 0 0 oklch(0 0 0 / 0.18),
+        0 2px 3px -1px oklch(0 0 0 / 0.26);
+}
+
+/* A recess: the near wall (top) falls into shadow, the far wall (bottom) catches light. */
+@utility recessed {
+    background-image: linear-gradient(to bottom, var(--well-deep), var(--well));
+    border: 1px solid var(--edge-line);
+    box-shadow:
+        inset 0 2px 5px var(--recess-shadow),
+        inset 0 -1px 0 0 var(--recess-light);
+}
+
+/* A groove cut into the panel: a meter track, a scrollbar channel, a divider slot. */
+@utility groove {
+    background-color: var(--well-deep);
+    border: 1px solid var(--edge-line);
+    box-shadow:
+        inset 0 2px 4px var(--recess-shadow),
+        inset 0 -1px 0 0 var(--recess-light);
+}
+
+/* Brushed aluminium: fine vertical striations over the chassis gradient. */
+@utility brushed {
+    background-color: var(--background);
+    background-image:
+        repeating-linear-gradient(
+            90deg,
+            var(--brush-ink) 0 1px,
+            transparent 1px 3px
+        ),
+        linear-gradient(to bottom, var(--metal-top), var(--metal-bottom));
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
+    @apply border-border outline-ring/70;
     }
   html {
     @apply font-sans;
     }
+  body {
+    @apply bg-background text-foreground antialiased brushed;
+    }
+}
+
+/* Unlayered on purpose. Layer order would let the components' own utilities win,
+   and these rules have to beat the box-shadow and outline they set. */
+
+/* Controls are physical caps: pressing one sinks it into the panel. */
+[data-slot="button"]:not(:disabled):active,
+[data-slot="select-trigger"]:not(:disabled):active,
+[data-slot="alert-dialog-cancel"]:not(:disabled):active,
+[data-slot="alert-dialog-action"]:not(:disabled):active {
+  box-shadow:
+    inset 0 2px 4px oklch(0 0 0 / 0.4),
+    inset 0 -1px 0 0 oklch(1 0 0 / 0.06);
+}
+
+/* Focus has to stay visible over metal and over a dark recess both. */
+:focus-visible {
+  outline-color: var(--ring);
+  outline-offset: 2px;
+}
+
+/* Menus and dialogs are plates lifted off the chassis. */
+[data-slot="select-content"],
+[data-slot="dropdown-menu-content"],
+[data-slot="dropdown-menu-sub-content"],
+[data-slot="alert-dialog-content"] {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(1 0 0 / 0.12),
+    oklch(1 0 0 / 0) 40%,
+    oklch(0 0 0 / 0.08)
+  );
+  box-shadow:
+    inset 0 1px 0 0 var(--bevel-light),
+    0 2px 0 0 var(--bevel-dark),
+    0 10px 24px -8px oklch(0 0 0 / 0.45);
 }

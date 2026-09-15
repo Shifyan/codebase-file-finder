@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import {
   Search,
   HardDrive,
-  RefreshCw,
   Filter,
   FileText,
   FolderSearch,
   Zap,
   Code2,
-  SlidersHorizontal,
-  FolderOpen,
-  ArrowRight,
+  Hash,
+  Square,
+  TriangleAlert,
   Sun,
   Moon,
   Monitor,
@@ -40,13 +39,25 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { useTheme } from "../../theme-provider";
 import {
   GetAvaliableServices,
   GetDiskStats,
-  SearchFiles,
 } from "../../../wailsjs/go/main/App";
-import { scanner, storage } from "../../../wailsjs/go/models";
+import { storage } from "../../../wailsjs/go/models";
+import { SearchCriteria, SearchMode } from "../../hooks/use-file-search";
+
 const LANGUAGES = [
   { name: "JavaScript", ext: "*.js, *.jsx, *.mjs", category: "Web" },
   { name: "TypeScript", ext: "*.ts, *.tsx", category: "Web" },
@@ -60,10 +71,30 @@ const LANGUAGES = [
   { name: "Ruby", ext: "*.rb", category: "Backend" },
 ];
 
+const MAX_RESULT_PRESETS = [1_000, 5_000, 20_000, 50_000] as const;
+
 const SCAN_MODES = [
-  { value: "fast", label: "Fast Index", hint: "Memindai cache sistem" },
-  { value: "deep", label: "Deep Scan", hint: "Memindai direktori sektor" },
+  {
+    value: "fast",
+    label: "Fast Index",
+    hint: "Lewati node_modules, .git, dist, dan ikuti .gitignore",
+  },
+  {
+    value: "deep",
+    label: "Deep Scan",
+    hint: "Telusuri semuanya tanpa mengabaikan apa pun (lambat)",
+  },
 ] as const;
+
+type HeaderProps = {
+  onSearch: (criteria: SearchCriteria) => void;
+  onCancel: () => void;
+  searching: boolean;
+  foundCount: number;
+  truncated: boolean;
+  cancelled: boolean;
+  error: string | null;
+};
 
 function formatSpace(bytes: number) {
   return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
@@ -74,22 +105,22 @@ function driveLabel(path: string) {
 }
 
 export function Header({
-  onResults,
-}: {
-  onResults: (
-    results: scanner.Result[],
-    language: string,
-    root: string,
-  ) => void;
-}) {
+  onSearch,
+  onCancel,
+  searching,
+  foundCount,
+  truncated,
+  cancelled,
+  error,
+}: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState<string | null>(null);
   const [drive, setDrive] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [scanMode, setScanMode] = useState<"fast" | "deep">("fast");
+  const [scanMode, setScanMode] = useState<SearchMode>("fast");
+  const [maxResults, setMaxResults] = useState<number>(20_000);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [confirmDeepOpen, setConfirmDeepOpen] = useState(false);
   const [drives, setDrives] = useState<storage.DiskStats[]>([]);
 
   const selectedDrive = drives.find((item) => item.path === drive) ?? null;
@@ -115,34 +146,61 @@ export function Header({
     })().catch((err) => console.error("Gagal memuat daftar drive:", err));
   }, []);
 
-  async function handleSearch() {
-    if (!selectedLangInfo || !drive || searching) return;
-    const patterns = selectedLangInfo.ext.split(",").map((ext) => ext.trim());
-    setError(null);
-    setSearching(true);
-    try {
-      const found = await SearchFiles(
-        drive,
-        patterns,
-        query,
-        scanMode === "fast",
-      );
-      onResults(found, selectedLangInfo.name, drive);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSearching(false);
+  function buildCriteria(): SearchCriteria | null {
+    if (!selectedLangInfo || !drive) return null;
+    return {
+      root: drive,
+      patterns: selectedLangInfo.ext.split(",").map((ext) => ext.trim()),
+      keyword: query,
+      mode: scanMode,
+      maxResults,
+      language: selectedLangInfo.name,
+    };
+  }
+
+  function handleSearch() {
+    if (searching) return;
+    const criteria = buildCriteria();
+    if (!criteria) return;
+
+    // Deep Scan menelusuri node_modules, .git, dan folder sistem sekaligus, jadi
+    // perlu konfirmasi dulu sebelum dijalankan.
+    if (criteria.mode === "deep") {
+      setConfirmDeepOpen(true);
+      return;
     }
+
+    onSearch(criteria);
+  }
+
+  function handleConfirmDeep() {
+    setConfirmDeepOpen(false);
+    const criteria = buildCriteria();
+    if (criteria) onSearch(criteria);
   }
 
   const filteredLanguages = activeCategory
     ? LANGUAGES.filter((l) => l.category === activeCategory)
     : LANGUAGES;
 
+  // Angka berkas yang terus berubah selama pemindaian terlalu berisik untuk
+  // diumumkan; yang dibacakan hanya hasil akhirnya.
+  const statusAnnouncement = searching
+    ? ""
+    : error
+      ? `Pemindaian gagal: ${error}`
+      : cancelled
+        ? `Pemindaian dihentikan. ${foundCount} berkas ditemukan.`
+        : truncated
+          ? `Pemindaian mencapai batas ${maxResults} berkas.`
+          : foundCount > 0
+            ? `Pemindaian selesai. ${foundCount} berkas ditemukan.`
+            : "";
+
   return (
-    <header className="flex flex-col border-b bg-background shadow-sm">
+    <header className="flex flex-col gap-3 p-4">
       {/* SECTION 1: Top Navigation Bar & Action Trigger */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-3.5 bg-muted/20">
+      <div className="raised flex flex-wrap items-center justify-between gap-4 rounded-xl px-5 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow">
             <Code2 className="h-5.5 w-5.5" />
@@ -200,11 +258,11 @@ export function Header({
       </div>
 
       {/* SECTION 2: Vertical Layout Configuration Controls */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-6 py-4 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
         {/* Left Column: Primary Inputs & Search Action Button (7 Cols) */}
-        <div className="lg:col-span-7 flex flex-col justify-between gap-3 bg-muted/10 rounded-xl p-3.5 border">
+        <div className="raised lg:col-span-7 flex flex-col justify-between gap-3 rounded-xl p-4">
           {/* Input Controls Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 ">
             {/* Drive Selector */}
             <div className="flex flex-col gap-1.5">
               <Label
@@ -217,7 +275,7 @@ export function Header({
               <Select value={drive ?? ""} onValueChange={setDrive}>
                 <SelectTrigger
                   id="drive"
-                  className="h-9 py-[17.5px] w-full rounded-md border border-input bg-background px-3 text-sm box-border flex items-center justify-between"
+                  className="h-9 py-[17.5px] w-full rounded-md recessed px-3 text-sm box-border flex items-center justify-between text-well-text"
                 >
                   <SelectValue placeholder="Pilih Drive" />
                 </SelectTrigger>
@@ -254,7 +312,7 @@ export function Header({
               <Select value={language ?? ""} onValueChange={setLanguage}>
                 <SelectTrigger
                   id="language"
-                  className="h-9 py-[17.5px] w-full rounded-md border border-input bg-background px-3 text-sm box-border flex items-center justify-between"
+                  className="h-9 py-[17.5px] w-full rounded-md recessed px-3 text-sm box-border flex items-center justify-between text-well-text"
                 >
                   <SelectValue placeholder="Pilih Bahasa" />
                 </SelectTrigger>
@@ -277,6 +335,40 @@ export function Header({
               </Select>
             </div>
 
+            {/* Max Results Selector */}
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="max-results"
+                className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"
+              >
+                <Hash className="h-3.5 w-3.5 text-primary" /> Batas Hasil
+              </Label>
+              <Select
+                value={String(maxResults)}
+                onValueChange={(value) => setMaxResults(Number(value))}
+              >
+                <SelectTrigger
+                  id="max-results"
+                  className="h-9 py-[17.5px] w-full rounded-md recessed px-3 text-sm box-border flex items-center justify-between text-well-text"
+                >
+                  <SelectValue placeholder="Batas Hasil" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MAX_RESULT_PRESETS.map((preset) => (
+                    <SelectItem
+                      key={preset}
+                      value={String(preset)}
+                      className={"py-2"}
+                    >
+                      <span className="font-medium">
+                        {preset.toLocaleString("id-ID")} berkas
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Keyword Query */}
             <div className="flex flex-col gap-1.5">
               <Label
@@ -291,13 +383,13 @@ export function Header({
                 placeholder="Cari nama berkas..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm box-border flex items-center justify-between"
+                className="h-9 w-full rounded-md recessed px-3 py-1 text-sm box-border flex items-center justify-between text-well-text"
               />
             </div>
           </div>
 
           {/* Action Bar inside Left Section */}
-          <div className="flex items-center justify-between gap-3 pt-2 border-t">
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-edge-line">
             <div className="flex items-center">
               <div className="me-3">
                 <p>Mode: </p>
@@ -309,7 +401,7 @@ export function Header({
                       <div
                         role="radiogroup"
                         aria-label="Mode pemindaian"
-                        className="flex h-10 items-center gap-0.5 rounded-lg border bg-muted/40 p-1 me-2"
+                        className="flex h-10 items-center gap-0.5 rounded-lg groove p-1 me-2"
                       >
                         {SCAN_MODES.map((mode) => {
                           const active = scanMode === mode.value;
@@ -321,11 +413,12 @@ export function Header({
                               aria-checked={active}
                               variant="ghost"
                               size="sm"
+                              disabled={searching}
                               onClick={() => setScanMode(mode.value)}
                               className={cn(
                                 "h-full rounded-md px-3 text-xs font-medium",
                                 active
-                                  ? "bg-background text-foreground shadow-sm"
+                                  ? "control text-foreground"
                                   : "text-muted-foreground hover:text-foreground",
                               )}
                             >
@@ -349,30 +442,38 @@ export function Header({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <p className="text-[12px] self-end py-0.5 text-white/35">
+              <p className="text-[12px] self-end py-0.5 dark:text-white/35 text-black/35">
                 *Mengabaikan .git & node_modules
               </p>
             </div>
-            <Button
-              size="sm"
-              className="h-10 p-2 flex justify-center items-center px-5 font-semibold shadow-sm"
-              onClick={handleSearch}
-              disabled={!language || !drive || searching}
-            >
-              {searching ? (
-                <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />
-              ) : (
+            {searching ? (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-10 p-2 flex min-w-35.75 justify-center items-center px-5 font-semibold"
+                onClick={onCancel}
+              >
+                <Square className="mr-2 h-3.5 w-3.5 fill-current" />
+                Hentikan
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="h-10 p-2 flex min-w-35.75 justify-center items-center px-5 font-semibold"
+                onClick={handleSearch}
+                disabled={!language || !drive}
+              >
                 <Search className="mr-2 h-3.5 w-3.5" />
-              )}
-              Mulai Memindai
-            </Button>
+                Mulai Memindai
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Right Column: Taller Storage Info Widget (5 Cols) */}
         <div className="lg:col-span-5 flex">
           {selectedDrive ? (
-            <div className="flex flex-col justify-between gap-3 rounded-xl border bg-card p-4 shadow-sm w-full min-h-[135px]">
+            <div className="raised flex flex-col justify-between gap-3 rounded-xl p-4 w-full min-h-[135px]">
               {/* Top Header */}
               <div className="flex items-start justify-between">
                 <div className="flex flex-col">
@@ -407,7 +508,7 @@ export function Header({
                     </strong>
                   </span>
                 </div>
-                <div className="h-3 w-full overflow-hidden rounded-full bg-muted border p-0.5">
+                <div className="h-3 w-full overflow-hidden rounded-full groove p-0.5">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
                       driveUsagePercent > 85 ? "bg-destructive" : "bg-primary"
@@ -418,7 +519,7 @@ export function Header({
               </div>
 
               {/* Footer info */}
-              <div className="text-[11px] text-muted-foreground border-t pt-2 flex justify-between items-center">
+              <div className="text-[11px] text-muted-foreground border-t border-edge-line pt-2 flex justify-between items-center">
                 <span>
                   Total Ukuran:{" "}
                   <strong className="text-foreground">
@@ -429,7 +530,7 @@ export function Header({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-2 text-xs text-muted-foreground border border-dashed rounded-xl p-4 bg-muted/10 w-full min-h-[135px] text-center">
+            <div className="flex flex-col items-center justify-center gap-2 text-xs text-muted-foreground rounded-xl border border-dashed border-edge-line p-4 w-full min-h-[135px] text-center">
               <FolderSearch className="h-6 w-6 text-muted-foreground/60" />
               <div>
                 <p className="font-semibold text-foreground">
@@ -482,27 +583,79 @@ export function Header({
 
       {/* SECTION 4: Scan Status */}
       {searching && (
-        <div className="border-t bg-background px-6 py-2.5">
-          <div className="flex items-center gap-2 text-xs mb-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            <span className="font-medium">
-              Memindai {drive} • {selectedLangInfo?.name}...
-            </span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
-          </div>
+        <div className="raised flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary shadow-[0_0_6px_1px_var(--ring)]"></span>
+          </span>
+          <span className="font-medium">
+            Memindai {drive} • {selectedLangInfo?.name}...
+          </span>
+          <span className="ml-auto tabular-nums text-muted-foreground">
+            {foundCount.toLocaleString("id-ID")} berkas ditemukan
+          </span>
+        </div>
+      )}
+
+      {truncated && !searching && (
+        <div className="raised flex items-start gap-2 rounded-xl px-5 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+          <TriangleAlert
+            className="mt-px size-3.5 shrink-0"
+            aria-hidden="true"
+          />
+          <span>
+            Pemindaian dihentikan pada batas{" "}
+            {maxResults.toLocaleString("id-ID")} berkas. Naikkan Batas Hasil
+            atau persempit filter untuk hasil yang lebih lengkap.
+          </span>
+        </div>
+      )}
+
+      {cancelled && !searching && !truncated && (
+        <div className="raised rounded-xl px-5 py-2.5 text-xs text-muted-foreground">
+          Pemindaian dihentikan. Menampilkan{" "}
+          {foundCount.toLocaleString("id-ID")} berkas yang sempat ditemukan.
         </div>
       )}
 
       {error && !searching && (
-        <div className="border-t bg-destructive/10 px-6 py-2 text-xs text-destructive">
-          Pemindaian gagal: {error}
+        <div className="raised flex items-start gap-2 rounded-xl px-5 py-2.5 text-xs text-destructive">
+          <TriangleAlert
+            className="mt-px size-3.5 shrink-0"
+            aria-hidden="true"
+          />
+          <span>Pemindaian gagal: {error}</span>
         </div>
       )}
+
+      <div role="status" className="sr-only">
+        {statusAnnouncement}
+      </div>
+
+      <AlertDialog open={confirmDeepOpen} onOpenChange={setConfirmDeepOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <TriangleAlert />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Jalankan Deep Scan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deep Scan tidak mengabaikan apa pun, termasuk{" "}
+              <strong className="text-foreground">node_modules</strong>,{" "}
+              <strong className="text-foreground">.git</strong>, dan folder
+              sistem. Pemindaian bisa sangat lambat dan akan berhenti begitu
+              mencapai Batas Hasil ({maxResults.toLocaleString("id-ID")}{" "}
+              berkas).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeep}>
+              Ya, jalankan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
