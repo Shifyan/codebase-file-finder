@@ -270,18 +270,6 @@ Belum ada test otomatis untuk frontend.
   repo dengan `.gitignore` bersarang tidak sepenuhnya dihormati.
 - **Kolom "Bahasa" bukan deteksi per-berkas.** Ia menampilkan bahasa yang Anda
   pilih sebagai filter, bukan hasil analisis tiap berkas.
-- **Error per-berkas diabaikan diam-diam** oleh penelusur, dan drive yang gagal
-  dibaca akan hilang dari daftar tanpa pemberitahuan.
-- **Exe portable belum punya metadata versi.** Properti berkas
-  `programming-languages-finder.exe` (nama produk, versi, copyright) kosong, karena
-  tidak ada berkas `.syso` resource yang di-embed. Installer NSIS-nya sudah benar
-  karena metadatanya ditulis langsung oleh skrip NSIS.
-- **`.gitignore` dilaporkan pernah bertambah baris `docs` secara otomatis** setelah
-  `wails build`. Periksa `git status` sebelum commit.
-- **`build/windows/installer/tmp/` belum masuk `.gitignore`.** Isinya
-  `MicrosoftEdgeWebview2Setup.exe`, berkas yang diunduh Wails saat build NSIS agar
-  installer bisa memasang WebView2 di mesin tanpa runtime tersebut. Ini artefak
-  unduhan, bukan bagian dari kode.
 
 ---
 
