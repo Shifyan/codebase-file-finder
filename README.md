@@ -72,24 +72,6 @@ tidak ada efek blur, jadi biaya rendering tetap rendah.
 | Portable (satu berkas)   | `programming-languages-finder.exe`                 | `wails build`       | https://drive.google.com/uc?export=download&id=17Uv48OXTVpbnR6tqWIgi5FpJ3_TJIApa |
 | Installer Windows (NSIS) | `programming-languages-finder-amd64-installer.exe` | `wails build -nsis` | https://drive.google.com/uc?export=download&id=1aOVV0K7XklbTHxdJ3zrYHIt2c6e7SlCI |
 
-Catatan:
-
-- **Nama tampilan berbeda dari nama berkas.** Aplikasi tampil sebagai _Codebase
-  File Finder_, sedangkan berkasnya bernama `programming-languages-finder`.
-  Keduanya diatur di `wails.json`: `info.productName` untuk nama tampilan,
-  `outputfilename` untuk nama berkas.
-- Versi **1.0.0** (`wails.json` → `info.productVersion`), dipakai oleh badge di UI
-  dan metadata installer.
-- Kedua berkas keluar di `build/bin/` dan sudah terverifikasi dihasilkan.
-- Rilis belum ditandatangani secara digital, jadi Windows SmartScreen kemungkinan
-  menampilkan peringatan saat pertama dijalankan.
-- Metadata jendela dan installer (nama perusahaan, nama produk, versi, copyright)
-  diatur di `wails.json` → blok `info`. Jangan mengedit
-  `build/windows/installer/wails_tools.nsh`, karena berkas itu ditulis ulang setiap
-  `wails build`.
-- Selama belum ada rilis publik, cara paling andal untuk mendapatkannya adalah
-  membangun sendiri (lihat bagian 4).
-
 ---
 
 ## 3. Teknologi
