@@ -8,6 +8,12 @@
   "frontend:dev:serverUrl": "auto",
   "author": {
     "name": "Shifyannn",
-    "email": "asifyan01@gmail.com"
+    "email": "asifyan02@gmail.com"
+  },
+  "info": {
+    "companyName": "Shifyannn",
+    "productName": "Codebase File Finder",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright (c) 2026 Shifyannn"
   }
 }

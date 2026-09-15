@@ -17,8 +17,9 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "programming-languages-finder",
+		Title:  "Codebase File Finder",
 		Width:  1024,
+		Frameless: false,
 		Height: 768,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
