@@ -29,12 +29,6 @@ satu pemindaian.
 - **10 bahasa siap pakai** dengan pemetaan ekstensi: JavaScript, TypeScript,
   Python, Go, Rust, Java, C#, C++, PHP, Ruby.
 - **Filter kata kunci** pada nama berkas (case-insensitive).
-- **Hasil streaming.** Berkas muncul selagi dipindai, lengkap dengan penghitung
-  jumlah temuan yang berjalan. Tidak ada progres palsu.
-- **Tabel virtual.** Hanya baris yang terlihat yang dirender, jadi 20.000 baris
-  tidak membekukan UI.
-- **Pohon folder** yang dibangun dari hasil pemindaian. Mengklik sebuah folder
-  memfilter tabel seketika tanpa memindai ulang.
 - **Dua mode pemindaian:**
   - **Fast Index** — mengabaikan `node_modules`, `.git`, `dist`, `build`, `target`,
     `vendor`, `__pycache__`, `venv`, `.venv`, `.next`, `.cache`, `.gradle`, dan
@@ -55,13 +49,6 @@ satu pemindaian.
 6. Klik **Mulai Memindai**. Tabel terisi bertahap.
 7. Klik folder di panel **Lokasi** untuk mempersempit tabel ke subtree itu, atau
    **Hentikan** untuk membatalkan.
-
-### Tampilan
-
-Antarmuka memakai bahasa visual _instrument panel_: chassis aluminium dengan
-tekstur brushed, panel dan tombol raised dengan bevel, serta area data sebagai
-ceruk (recessed) yang mengikuti tema. Semua arah cahaya konsisten dari atas, dan
-tidak ada efek blur, jadi biaya rendering tetap rendah.
 
 ---
 
