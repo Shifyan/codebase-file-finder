@@ -56,8 +56,8 @@ satu pemindaian.
 
 | Bentuk distribusi        | Berkas hasil                                       | Perintah build      | Tautan rilis                                                                     |
 | ------------------------ | -------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------- |
-| Portable (satu berkas)   | `programming-languages-finder.exe`                 | `wails build`       | https://drive.google.com/uc?export=download&id=17Uv48OXTVpbnR6tqWIgi5FpJ3_TJIApa |
-| Installer Windows (NSIS) | `programming-languages-finder-amd64-installer.exe` | `wails build -nsis` | https://drive.google.com/uc?export=download&id=1aOVV0K7XklbTHxdJ3zrYHIt2c6e7SlCI |
+| Portable (satu berkas)   | `programming-languages-finder.exe`                 | `wails build`       | https://drive.google.com/uc?export=download&id=1QlLTDjSl9VGycOYM__RGuZFkls3TLSUA |
+| Installer Windows (NSIS) | `programming-languages-finder-amd64-installer.exe` | `wails build -nsis` | https://drive.google.com/uc?export=download&id=1BGU_xvSyRJ2EfUb2Ecf9JEujm2xywZRS |
 
 ---
 
