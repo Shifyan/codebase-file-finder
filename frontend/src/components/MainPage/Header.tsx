@@ -209,7 +209,7 @@ export function Header({
             <h1 className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
               Codebase File Finder
               <Badge variant="outline" className="text-[10px] font-mono py-0">
-                v1.0
+                v1.1.0
               </Badge>
             </h1>
             <p className="text-xs text-muted-foreground">

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronRight,
+  Code,
   FileCode,
   Folder,
   FolderOpen,
@@ -25,7 +26,17 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuItem,
+  ContextMenuContent,
+} from "../ui/context-menu";
 import { ScrollArea } from "../ui/scroll-area";
+import {
+  OpenWithDefaultEditor,
+  OpenInFolder,
+} from "../../../wailsjs/go/main/App";
 
 // Layout kolom dipakai bersama oleh baris header dan baris data; keduanya harus
 // memakai konstanta ini agar lebar kolom tidak bergeser.
@@ -206,10 +217,7 @@ function ResultsPanel({
                         {segment}
                       </BreadcrumbPage>
                     ) : (
-                      <BreadcrumbLink
-                        href="#"
-                        className="hover:text-well-text"
-                      >
+                      <BreadcrumbLink href="#" className="hover:text-well-text">
                         {segment}
                       </BreadcrumbLink>
                     )}
@@ -244,34 +252,54 @@ function ResultsPanel({
           {rowVirtualizer.getVirtualItems().map((item) => {
             const result = results[item.index];
             return (
-              <div
-                key={item.key}
-                className={cn(
-                  GRID,
-                  "absolute left-0 top-0 w-full border-b border-edge-line/50 px-4 text-sm transition-colors hover:bg-well-hover",
-                )}
-                style={{
-                  height: item.size,
-                  transform: `translateY(${item.start}px)`,
-                }}
-              >
-                <span className="flex min-w-0 items-center gap-2 font-medium">
-                  <FileCode className="size-4 shrink-0 text-well-muted" />
-                  <span className="truncate">{result.name}</span>
-                </span>
-                <span className="min-w-0">
-                  <Badge variant="secondary">{language}</Badge>
-                </span>
-                <span className="text-right tabular-nums">
-                  {formatBytes(result.size)}
-                </span>
-                <span className="truncate text-well-muted">
-                  {formatDate(result.modified)}
-                </span>
-                <span className="truncate text-well-muted">
-                  {result.path}
-                </span>
-              </div>
+              <ContextMenu>
+                <ContextMenuTrigger>
+                  <div
+                    key={item.key}
+                    className={cn(
+                      GRID,
+                      "absolute hover:cursor-pointer left-0 top-0 w-full border-b border-edge-line/50 px-4 text-sm transition-colors hover:bg-well-hover",
+                    )}
+                    style={{
+                      height: item.size,
+                      transform: `translateY(${item.start}px)`,
+                    }}
+                  >
+                    <span className="flex min-w-0 items-center gap-2 font-medium">
+                      <FileCode className="size-4 shrink-0 text-well-muted" />
+                      <span className="truncate">{result.name}</span>
+                    </span>
+                    <span className="min-w-0">
+                      <Badge variant="secondary">{language}</Badge>
+                    </span>
+                    <span className="text-right tabular-nums">
+                      {formatBytes(result.size)}
+                    </span>
+                    <span className="truncate text-well-muted">
+                      {formatDate(result.modified)}
+                    </span>
+                    <span className="truncate text-well-muted">
+                      {result.path}
+                    </span>
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-42">
+                  <ContextMenuItem
+                    onClick={() => OpenWithDefaultEditor(result.path, false)}
+                    className={"hover:cursor-pointer h-9 gap-3"}
+                  >
+                    <Code />
+                    Buka File
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    onClick={() => OpenInFolder(result.path, false)}
+                    className={"hover:cursor-pointer h-9 gap-3"}
+                  >
+                    <Folder />
+                    Buka di Folder
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             );
           })}
         </div>
@@ -290,7 +318,9 @@ function StatusBar({
   const total = results.reduce((sum, result) => sum + result.size, 0);
   return (
     <div className="raised flex items-center justify-between gap-4 rounded-xl px-4 py-2 text-xs text-muted-foreground">
-      <span className="shrink-0">{results.length.toLocaleString("id-ID")} item</span>
+      <span className="shrink-0">
+        {results.length.toLocaleString("id-ID")} item
+      </span>
       <span className="truncate">
         {path.length > 0 ? path.join("\\") : "Belum ada lokasi dipilih"} • Total{" "}
         {formatBytes(total)}
@@ -326,10 +356,7 @@ export function Body({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4">
-      <ResizablePanelGroup
-        orientation="horizontal"
-        className="min-h-0 flex-1"
-      >
+      <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
         <ResizablePanel
           defaultSize="30"
           minSize="18"

@@ -18,6 +18,14 @@ export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
 
+export function OpenInFolder(arg1, arg2) {
+  return window['go']['main']['App']['OpenInFolder'](arg1, arg2);
+}
+
+export function OpenWithDefaultEditor(arg1, arg2) {
+  return window['go']['main']['App']['OpenWithDefaultEditor'](arg1, arg2);
+}
+
 export function SearchFiles(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['main']['App']['SearchFiles'](arg1, arg2, arg3, arg4, arg5, arg6);
 }

@@ -11,4 +11,8 @@ export function GetDiskStats(arg1:string):Promise<storage.DiskStats>;
 
 export function Greet(arg1:string):Promise<string>;
 
+export function OpenInFolder(arg1:string,arg2:boolean):Promise<void>;
+
+export function OpenWithDefaultEditor(arg1:string,arg2:boolean):Promise<void>;
+
 export function SearchFiles(arg1:string,arg2:Array<string>,arg3:string,arg4:string,arg5:number,arg6:string):Promise<scanner.SearchStats>;

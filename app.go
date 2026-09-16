@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"programming-languages-finder/internal/scanner"
@@ -126,5 +128,27 @@ func (a *App) CancelSearch(searchID string) error {
 	}
 
 	cancel()
+	return nil
+}
+func (a *App) OpenWithDefaultEditor(filePath string, forceDialog bool) error {
+	cleanPath := filepath.Clean(filePath)
+
+	cmd := exec.Command("explorer.exe", cleanPath)
+	
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("gagal membuka Explorer: %w", err)
+	}
+	return nil
+}
+func (a *App) OpenInFolder(filePath string, forceDialog bool) error {
+	cleanPath := filepath.Clean(filePath)
+
+	cmd := exec.Command("explorer.exe", "/select,", cleanPath)
+	
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("gagal membuka Explorer: %w", err)
+	}
 	return nil
 }
