@@ -9,8 +9,6 @@ export function GetAvaliableServices():Promise<Array<string>>;
 
 export function GetDiskStats(arg1:string):Promise<storage.DiskStats>;
 
-export function Greet(arg1:string):Promise<string>;
-
 export function OpenInFolder(arg1:string,arg2:boolean):Promise<void>;
 
 export function OpenWithDefaultEditor(arg1:string,arg2:boolean):Promise<void>;

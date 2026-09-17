@@ -54,10 +54,10 @@ satu pemindaian.
 
 ## 2. Unduh
 
-| Bentuk distribusi        | Berkas hasil                                       | Perintah build      | Tautan rilis                                                                     |
-| ------------------------ | -------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------- |
-| Portable (satu berkas)   | `programming-languages-finder.exe`                 | `wails build`       | https://drive.google.com/uc?export=download&id=1QlLTDjSl9VGycOYM__RGuZFkls3TLSUA |
-| Installer Windows (NSIS) | `programming-languages-finder-amd64-installer.exe` | `wails build -nsis` | https://drive.google.com/uc?export=download&id=1BGU_xvSyRJ2EfUb2Ecf9JEujm2xywZRS |
+| Bentuk distribusi        | Berkas hasil                               | Perintah build      | Tautan rilis                                                                     |
+| ------------------------ | ------------------------------------------ | ------------------- | -------------------------------------------------------------------------------- |
+| Portable (satu berkas)   | `codebase-file-finder-portable.exe`        | `wails build`       | https://drive.google.com/uc?export=download&id=1gFmS1NVZX0mKG30i-8es5nx5n55_sfkw |
+| Installer Windows (NSIS) | `codebase-file-finder-amd64-installer.exe` | `wails build -nsis` | https://drive.google.com/uc?export=download&id=1-P_0idRQ2aEGplhic43y-VdXKmMy3r1m |
 
 ---
 
