@@ -30,10 +30,10 @@ satu pemindaian.
   Python, Go, Rust, Java, C#, C++, PHP, Ruby.
 - **Filter kata kunci** pada nama berkas (case-insensitive).
 - **Dua mode pemindaian:**
-  - **Fast Index** — mengabaikan `node_modules`, `.git`, `dist`, `build`, `target`,
+  - **Fast Index**, mengabaikan `node_modules`, `.git`, `dist`, `build`, `target`,
     `vendor`, `__pycache__`, `venv`, `.venv`, `.next`, `.cache`, `.gradle`, dan
     menghormati `.gitignore` pada root drive.
-  - **Deep Scan** — tidak mengabaikan apa pun, termasuk `node_modules` dan `.git`.
+  - **Deep Scan**, tidak mengabaikan apa pun, termasuk `node_modules` dan `.git`.
     Jauh lebih lambat, jadi ada dialog konfirmasi sebelum dijalankan.
 - **Batas hasil yang bisa diatur**: 1.000 / 5.000 / 20.000 / 50.000 berkas.
   Saat batas tercapai, pemindaian berhenti dan UI memberi tahu bahwa hasilnya
